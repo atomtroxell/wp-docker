@@ -1,0 +1,74 @@
+version: "3.8"
+
+# WordPress Multi-Site Development Environment
+# This file manages all WordPress sites in one place
+# Use create-site.sh or create-site.bat to add new sites
+
+services:
+  # Example site - you can remove this after creating your first site
+  example_wordpress:
+    image: wordpress:latest
+    restart: unless-stopped
+    container_name: example_wordpress
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: example_db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - example_wordpress_data:/var/www/html
+      - ../example/wp-content:/var/www/html/wp-content
+    depends_on:
+      example_db:
+        condition: service_healthy
+    networks:
+      - example_network
+
+  example_db:
+    image: mysql:8.0
+    restart: unless-stopped
+    container_name: example_db
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - example_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - example_network
+
+  example_phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    container_name: example_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: example_db
+      PMA_USER: wordpress
+      PMA_PASSWORD: wordpress
+    depends_on:
+      - example_db
+    networks:
+      - example_network
+
+# Additional sites will be added below by the create-site script
+
+networks:
+  example_network:
+    name: example_network
+
+volumes:
+  example_wordpress_data:
+    name: example_wordpress_data
+  example_db_data:
+    name: example_db_data
